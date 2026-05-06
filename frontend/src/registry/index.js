@@ -2,11 +2,11 @@ import { defineAsyncComponent } from "vue";
 
 export const registry = [
   {
-    slug: "code-block",
-    label: "lalalala",
-    category: "ADMIN",
+    slug: "circular-text",
+    label: "Circular Text",
+    category: "Text",
     component: defineAsyncComponent(
-      () => import("../components/ui/CodeBlock.vue"),
+      () => import("../components/ui/CircularText/CircularTextDemo.vue"),
     ),
   },
   {
