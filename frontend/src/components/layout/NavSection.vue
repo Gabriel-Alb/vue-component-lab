@@ -4,13 +4,17 @@
       {{ title }}
     </p>
 
-    <button v-for="item in items" :key="item.label" :class="[
-      'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium tracking-tight transition-colors duration-150 cursor-pointer border-none',
-      active === item.label
-        ? 'bg-white/[0.08] text-white'
-        : 'bg-transparent text-white/45 hover:bg-white/[0.04] hover:text-white/80',
-    ]" @click="$emit('select', item.label)">
-
+    <button
+      v-for="item in items"
+      :key="item.slug"
+      :class="[
+        'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium tracking-tight transition-colors duration-150 cursor-pointer border-none',
+        active === item.slug
+          ? 'bg-white/[0.08] text-white'
+          : 'bg-transparent text-white/45 hover:bg-white/[0.04] hover:text-white/80',
+      ]"
+      @click="$emit('select', item.slug)"
+    >
       <span class="flex-1 truncate">{{ item.label }}</span>
     </button>
   </div>
