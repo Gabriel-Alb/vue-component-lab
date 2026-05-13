@@ -20,12 +20,12 @@ export const registry = [
     ),
   },
   {
-    slug: "interactive wave text",
-    label: "Interactive Wave Text",
-    category: "Text",
+    slug: "joãobobo",
+    label: "João bobo",
+    category: "components",
     component: defineAsyncComponent(
       () =>
-        import("../components/ui/animated-text/InteractiveWaveText/InteractiveWaveTextDemo.vue"),
+        import("../components/ui/AnimatedJoaoBobo/AnimatedJoaoBoboDemo.vue"),
     ),
   },
   {
