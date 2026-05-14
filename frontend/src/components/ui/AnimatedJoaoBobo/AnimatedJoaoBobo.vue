@@ -1,7 +1,6 @@
 <template>
   <button ref="buddyRef" type="button" class="joao-bobo" :style="buddyStyle" aria-label="João bobo interativo"
     @click="handleHit">
-    <span class="joao-bobo__shadow" aria-hidden="true" />
 
     <span class="joao-bobo__character" aria-hidden="true">
       <span class="joao-bobo__gourd">
@@ -73,6 +72,8 @@ const buddyStyle = computed(() => {
   const starShift = followX * 18;
   const starVerticalShift = followY * 16;
 
+  const medalVerticalShift = clamp(followY * 5, -5, 5);
+
   const leftStarOpacity = clamp(0.78 + followX * 0.22, 0.54, 1);
   const rightStarOpacity = clamp(0.78 - followX * 0.22, 0.54, 1);
 
@@ -110,6 +111,7 @@ const buddyStyle = computed(() => {
     "--star-left-shift": `${starShift}px`,
     "--star-right-shift": `${starShift}px`,
     "--star-vertical-shift": `${starVerticalShift}px`,
+    "--medal-vertical-shift": `${medalVerticalShift}px`,
     "--star-left-opacity": leftStarOpacity,
     "--star-right-opacity": rightStarOpacity,
     "--star-left-scale": leftStarScale,
@@ -275,6 +277,7 @@ onBeforeUnmount(() => {
   --star-left-shift: 0px;
   --star-right-shift: 0px;
   --star-vertical-shift: 0px;
+  --medal-vertical-shift: 0px;
   --star-left-opacity: 0.78;
   --star-right-opacity: 0.78;
   --star-left-scale: 0.92;
@@ -299,17 +302,6 @@ onBeforeUnmount(() => {
   border-radius: 28px;
   outline: 3px solid rgba(245, 191, 36, 0.35);
   outline-offset: 8px;
-}
-
-.joao-bobo__shadow {
-  position: absolute;
-  left: 50%;
-  bottom: 12px;
-  width: var(--shadow-width);
-  height: 28px;
-  border-radius: 999px;
-  background: rgba(54, 38, 7, 0.18);
-  transform: translateX(-50%) translateX(var(--shadow-x));
 }
 
 .joao-bobo__character {
@@ -436,7 +428,7 @@ onBeforeUnmount(() => {
   background: #dc2626;
   border: 8px solid #7dd3fc;
   transform:
-    translateX(-50%) translateX(var(--star-left-shift)) translateY(var(--star-vertical-shift));
+    translateX(-50%) translateX(var(--star-left-shift)) translateY(var(--medal-vertical-shift));
 }
 
 .joao-bobo__circle-dots {

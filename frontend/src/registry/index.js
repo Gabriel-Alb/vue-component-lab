@@ -36,4 +36,12 @@ export const registry = [
       () => import("../components/ui/AnimatedFolder/AnimatedFolderDemo.vue"),
     ),
   },
+  {
+    slug: "clickspark",
+    label: "Click Spark",
+    category: "pointer",
+    component: defineAsyncComponent(
+      () => import("../components/ui/ClickSpark/ClickSparkDemo.vue"),
+    ),
+  },
 ];
