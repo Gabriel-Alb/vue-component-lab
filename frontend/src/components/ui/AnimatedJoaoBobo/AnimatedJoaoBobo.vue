@@ -1,12 +1,23 @@
 <template>
-  <button ref="buddyRef" type="button" class="joao-bobo" :style="buddyStyle" aria-label="João bobo interativo"
-    @click="handleHit">
+  <ClickSpark target-selector=".joao-bobo" spark-color="rgba(220, 38, 38, 0.48)" :spark-radius="18" :spark-length="7"
+    :spark-thickness="2" :spark-count="10" :duration="420" />
 
+  <button ref="buddyRef" type="button" class="joao-bobo" :class="{
+    'joao-bobo--blink': isEyeBlinking,
+    'joao-bobo--spiral': isEyeSpiralActive,
+  }" :style="buddyStyle" aria-label="João bobo interativo" @click="handleHit">
     <span class="joao-bobo__character" aria-hidden="true">
       <span class="joao-bobo__gourd">
         <span class="joao-bobo__section joao-bobo__section--head" />
         <span class="joao-bobo__section joao-bobo__section--torso" />
         <span class="joao-bobo__section joao-bobo__section--base" />
+
+        <span class="joao-bobo__face">
+          <span class="joao-bobo__eye joao-bobo__eye--left" />
+          <span class="joao-bobo__eye joao-bobo__eye--right" />
+          <span class="joao-bobo__nose" />
+          <span class="joao-bobo__mouth" />
+        </span>
 
         <span class="joao-bobo__belt" />
 
@@ -25,14 +36,12 @@
         <span class="joao-bobo__base joao-bobo__base--bottom" />
       </span>
     </span>
-
-    <span v-for="particle in particles" :key="particle.id" class="joao-bobo__particle" :style="particle.style"
-      aria-hidden="true" />
   </button>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import ClickSpark from "../ClickSpark/ClickSpark.vue";
 
 const buddyRef = ref(null);
 
@@ -47,11 +56,19 @@ const hitDirection = ref(1);
 const hitElapsed = ref(0);
 const isHitActive = ref(false);
 
-const particles = ref([]);
+const isEyeBlinking = ref(false);
+const isEyeSpiralActive = ref(false);
+const hitCount = ref(0);
+
+const BLINK_DURATION = 260;
+const TRIPLE_HIT_INTERVAL = 700;
+const SPIRAL_DURATION = 10000;
 
 let animationFrame = null;
 let lastTimestamp = 0;
-let particleId = 0;
+let blinkTimeout = null;
+let hitSequenceTimeout = null;
+let spiralTimeout = null;
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
@@ -98,6 +115,19 @@ const buddyStyle = computed(() => {
   const bottomBaseScaleX = clamp(1 - followY * 0.08, 0.92, 1.08);
   const bottomBaseScaleY = clamp(1 - followY * 0.05, 0.95, 1.05);
 
+  const faceShiftX = followX * 4;
+  const faceShiftY = followY * 3;
+
+  const eyeLeftShift = followX * 5;
+  const eyeRightShift = followX * 5;
+  const eyeVerticalShift = followY * 5;
+
+  const eyeLeftScale = clamp(1 + followX * 0.035, 0.96, 1.04);
+  const eyeRightScale = clamp(1 - followX * 0.035, 0.96, 1.04);
+
+  const pupilX = followX * 3.5;
+  const pupilY = followY * 2.8;
+
   return {
     "--body-x": `${followX * 4}px`,
     "--body-y": `${followY * 3 + hitLift.value}px`,
@@ -130,6 +160,16 @@ const buddyStyle = computed(() => {
     "--torso-shift": `${torsoShift}px`,
     "--base-top": `${baseTop}px`,
     "--base-height": `${baseHeight}px`,
+
+    "--face-shift-x": `${faceShiftX}px`,
+    "--face-shift-y": `${faceShiftY}px`,
+    "--eye-left-shift": `${eyeLeftShift}px`,
+    "--eye-right-shift": `${eyeRightShift}px`,
+    "--eye-vertical-shift": `${eyeVerticalShift}px`,
+    "--eye-left-scale": eyeLeftScale,
+    "--eye-right-scale": eyeRightScale,
+    "--pupil-x": `${pupilX}px`,
+    "--pupil-y": `${pupilY}px`,
   };
 });
 
@@ -188,44 +228,61 @@ function animateBuddy(timestamp) {
   animationFrame = window.requestAnimationFrame(animateBuddy);
 }
 
-function createHitParticles(event) {
-  const element = buddyRef.value;
+function blinkEyes() {
+  if (isEyeSpiralActive.value) return;
 
-  if (!element) return;
+  isEyeBlinking.value = false;
 
-  const rect = element.getBoundingClientRect();
+  if (blinkTimeout) {
+    window.clearTimeout(blinkTimeout);
+  }
 
-  const originX = event.clientX - rect.left;
-  const originY = event.clientY - rect.top;
+  window.requestAnimationFrame(() => {
+    isEyeBlinking.value = true;
 
-  const newParticles = Array.from({ length: 10 }, (_, index) => {
-    const angle = -Math.PI / 2 + (index - 4.5) * 0.28;
-    const distance = 28 + (index % 4) * 8;
-
-    particleId += 1;
-
-    return {
-      id: particleId,
-      style: {
-        "--particle-x": `${originX}px`,
-        "--particle-y": `${originY}px`,
-        "--particle-dx": `${Math.cos(angle) * distance}px`,
-        "--particle-dy": `${Math.sin(angle) * distance}px`,
-        "--particle-size": `${5 + (index % 3)}px`,
-        "--particle-delay": `${index * 12}ms`,
-      },
-    };
+    blinkTimeout = window.setTimeout(() => {
+      isEyeBlinking.value = false;
+    }, BLINK_DURATION);
   });
+}
 
-  particles.value = [...particles.value, ...newParticles];
+function activateSpiralEyes() {
+  isEyeBlinking.value = false;
+  isEyeSpiralActive.value = true;
+  hitCount.value = 0;
 
-  window.setTimeout(() => {
-    const idsToRemove = new Set(newParticles.map((particle) => particle.id));
+  if (blinkTimeout) {
+    window.clearTimeout(blinkTimeout);
+  }
 
-    particles.value = particles.value.filter(
-      (particle) => !idsToRemove.has(particle.id),
-    );
-  }, 760);
+  if (hitSequenceTimeout) {
+    window.clearTimeout(hitSequenceTimeout);
+  }
+
+  if (spiralTimeout) {
+    window.clearTimeout(spiralTimeout);
+  }
+
+  spiralTimeout = window.setTimeout(() => {
+    isEyeSpiralActive.value = false;
+  }, SPIRAL_DURATION);
+}
+
+function registerHitSequence() {
+  hitCount.value += 1;
+
+  if (hitSequenceTimeout) {
+    window.clearTimeout(hitSequenceTimeout);
+  }
+
+  if (hitCount.value >= 3) {
+    activateSpiralEyes();
+    return;
+  }
+
+  hitSequenceTimeout = window.setTimeout(() => {
+    hitCount.value = 0;
+  }, TRIPLE_HIT_INTERVAL);
 }
 
 function handleHit(event) {
@@ -235,7 +292,8 @@ function handleHit(event) {
   hitElapsed.value = 0;
   isHitActive.value = true;
 
-  createHitParticles(event);
+  blinkEyes();
+  registerHitSequence();
 }
 
 onMounted(() => {
@@ -249,6 +307,18 @@ onBeforeUnmount(() => {
   if (animationFrame) {
     window.cancelAnimationFrame(animationFrame);
   }
+
+  if (blinkTimeout) {
+    window.clearTimeout(blinkTimeout);
+  }
+
+  if (hitSequenceTimeout) {
+    window.clearTimeout(hitSequenceTimeout);
+  }
+
+  if (spiralTimeout) {
+    window.clearTimeout(spiralTimeout);
+  }
 });
 </script>
 
@@ -256,7 +326,7 @@ onBeforeUnmount(() => {
 .joao-bobo {
   position: relative;
   width: 260px;
-  height: 320px;
+  height: 340px;
   border: 0;
   padding: 0;
   background: transparent;
@@ -296,6 +366,16 @@ onBeforeUnmount(() => {
   --torso-shift: 0px;
   --base-top: 136px;
   --base-height: 152px;
+
+  --face-shift-x: 0px;
+  --face-shift-y: 0px;
+  --eye-left-shift: 0px;
+  --eye-right-shift: 0px;
+  --eye-vertical-shift: 0px;
+  --eye-left-scale: 1;
+  --eye-right-scale: 1;
+  --pupil-x: 0px;
+  --pupil-y: 0px;
 }
 
 .joao-bobo:focus-visible {
@@ -307,7 +387,7 @@ onBeforeUnmount(() => {
 .joao-bobo__character {
   position: absolute;
   left: 50%;
-  bottom: 28px;
+  bottom: 38px;
   width: 220px;
   height: 285px;
   transform:
@@ -321,6 +401,7 @@ onBeforeUnmount(() => {
   position: absolute;
   left: 50%;
   bottom: 0;
+  z-index: 1;
   width: 210px;
   height: 276px;
   overflow: hidden;
@@ -342,7 +423,7 @@ onBeforeUnmount(() => {
 }
 
 .joao-bobo__section--head {
-  top: -2px;
+  top: 10px;
   z-index: 3;
   height: var(--head-height);
   background:
@@ -372,6 +453,216 @@ onBeforeUnmount(() => {
     radial-gradient(circle at 36% 24%, rgba(255, 255, 255, 0.24), transparent 34%),
     linear-gradient(135deg, #fb923c 0%, #f97316 48%, #c2410c 100%);
   border-radius: 50%;
+}
+
+.joao-bobo__face {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  z-index: 6;
+  width: 127px;
+  height: 100px;
+  pointer-events: none;
+  transform:
+    translateX(-50%) translate(var(--face-shift-x), var(--face-shift-y));
+  will-change: transform;
+}
+
+.joao-bobo__eye {
+  will-change: transform;
+}
+
+.joao-bobo__eye--left {
+  position: absolute;
+  top: 14px;
+  left: 4px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #b91c1c;
+  overflow: hidden;
+  transform:
+    translateX(var(--eye-left-shift)) translateY(var(--eye-vertical-shift)) scale(var(--eye-left-scale)) rotate(15deg);
+  transform-origin: 50% 50%;
+  clip-path: polygon(0% 100%,
+      0% 8%,
+      100% 34%,
+      100% 100%);
+}
+
+.joao-bobo__eye--left::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff7ed;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(0% 100%,
+      0% 8%,
+      100% 34%,
+      100% 100%);
+}
+
+.joao-bobo__eye--left::after {
+  content: "";
+  position: absolute;
+  top: 53%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 50%;
+  background:
+    radial-gradient(circle at calc(50% + var(--pupil-x)) calc(50% + var(--pupil-y)),
+      #111827 0 4px,
+      transparent 4.4px),
+    #22c55e;
+}
+
+.joao-bobo__eye--right {
+  position: absolute;
+  top: 14px;
+  right: 4px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #b91c1c;
+  overflow: hidden;
+  transform:
+    translateX(var(--eye-right-shift)) translateY(var(--eye-vertical-shift)) scaleX(-1) scale(var(--eye-right-scale)) rotate(15deg);
+  transform-origin: 50% 50%;
+  clip-path: polygon(0% 100%,
+      0% 8%,
+      100% 34%,
+      100% 100%);
+}
+
+.joao-bobo__eye--right::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #fff7ed;
+  transform: translate(-50%, -50%);
+  clip-path: polygon(0% 100%,
+      0% 8%,
+      100% 34%,
+      100% 100%);
+}
+
+.joao-bobo__eye--right::after {
+  content: "";
+  position: absolute;
+  top: 53%;
+  left: 50%;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transform-origin: 50% 50%;
+  background:
+    radial-gradient(circle at calc(50% - var(--pupil-x)) calc(50% + var(--pupil-y)),
+      #111827 0 4px,
+      transparent 4.4px),
+    #22c55e;
+}
+
+.joao-bobo__nose {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  z-index: 8;
+
+  width: 0;
+  height: 0;
+
+  background: transparent;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 14px solid #04b4fa;
+
+  transform:
+    translateX(calc(-50% + var(--eye-left-shift))) translateY(var(--eye-vertical-shift));
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.joao-bobo__mouth {
+  position: absolute;
+  top: 77px;
+  left: 50%;
+  z-index: 8;
+
+  width: 58px;
+  height: 25px;
+  box-sizing: border-box;
+
+  border: 5px solid #0050fd;
+  border-radius: 50%;
+  background: #22c55e;
+
+  transform:
+    translateX(calc(-50% + var(--eye-left-shift))) translateY(var(--eye-vertical-shift));
+  transform-origin: 50% 50%;
+  pointer-events: none;
+  will-change: transform;
+}
+
+.joao-bobo__mouth::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 4px;
+
+  width: 28px;
+  height: 12px;
+
+  border-top: 4px solid #111827;
+  border-radius: 50% 50% 0 0;
+
+  transform: translateX(-50%);
+}
+
+.joao-bobo--spiral .joao-bobo__mouth::after {
+  top: 2px;
+
+  width: 30px;
+  height: 12px;
+
+  border: 0;
+  border-radius: 0;
+
+  background:
+    url("data:image/svg+xml,%3Csvg width='60' height='24' viewBox='0 0 60 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M4 12 C9 4 15 4 20 12 C25 20 31 20 36 12 C41 4 47 4 56 12' fill='none' stroke='%23111827' stroke-width='6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+
+  transform: translateX(-50%);
+}
+
+/* Pisca somente a bolinha verde/preta */
+.joao-bobo--blink .joao-bobo__eye--left::after,
+.joao-bobo--blink .joao-bobo__eye--right::after {
+  animation: joao-bobo-pupil-blink 260ms ease-in-out;
+}
+
+/* Espiral redonda somente com linha preta, mais espaçada */
+.joao-bobo--spiral .joao-bobo__eye--left::after,
+.joao-bobo--spiral .joao-bobo__eye--right::after {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background:
+    url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M60 60 C73 60 73 45 60 45 C38 45 38 75 60 75 C94 75 94 30 60 30 C18 30 18 94 60 94' fill='none' stroke='black' stroke-width='7' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  box-shadow: none;
+  animation: joao-bobo-eye-spiral 680ms linear infinite;
 }
 
 .joao-bobo__belt {
@@ -566,47 +857,28 @@ onBeforeUnmount(() => {
     translateX(-50%) translateY(var(--base-bottom-shift)) scaleX(var(--base-bottom-scale-x)) scaleY(var(--base-bottom-scale-y));
 }
 
-.joao-bobo__particle {
-  position: absolute;
-  left: var(--particle-x);
-  top: var(--particle-y);
-  z-index: 10;
-  width: var(--particle-size);
-  height: var(--particle-size);
-  border-radius: 999px;
-  background: #f8cf35;
-  pointer-events: none;
-  transform: translate(-50%, -50%) scale(0.4);
-  animation: particleBurst 660ms ease-out var(--particle-delay) forwards;
-}
+@keyframes joao-bobo-pupil-blink {
 
-.joao-bobo__particle:nth-child(3n) {
-  background: #ffffff;
-}
-
-.joao-bobo__particle:nth-child(3n + 1) {
-  background: #f2b705;
-}
-
-.joao-bobo__particle:nth-child(3n + 2) {
-  background: #60a5fa;
-}
-
-@keyframes particleBurst {
-  0% {
-    opacity: 0;
-    transform: translate(-50%, -50%) scale(0.35);
-  }
-
-  18% {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scaleY(1);
     opacity: 1;
   }
 
-  100% {
-    opacity: 0;
-    transform:
-      translate(calc(-50% + var(--particle-dx)),
-        calc(-50% + var(--particle-dy))) scale(1);
+  45%,
+  55% {
+    transform: translate(-50%, -50%) scaleY(0.08);
+    opacity: 0.2;
+  }
+}
+
+@keyframes joao-bobo-eye-spiral {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  to {
+    transform: translate(-50%, -50%) rotate(360deg);
   }
 }
 </style>
