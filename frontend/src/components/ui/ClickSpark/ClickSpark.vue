@@ -53,11 +53,22 @@ const props = defineProps({
     type: [Number, String],
     default: 9999,
   },
+
+  targetSelector: {
+    type: String,
+    default: '',
+  },
 })
 
 const sparks = ref([])
 
 function createSpark(event) {
+  const target = event.target instanceof Element ? event.target : null
+
+  if (props.targetSelector && !target?.closest(props.targetSelector)) {
+    return
+  }
+
   const sparkId =
     typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
