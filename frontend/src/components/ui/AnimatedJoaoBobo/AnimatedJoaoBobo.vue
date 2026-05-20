@@ -540,10 +540,10 @@ onBeforeUnmount(() => {
   background:
     linear-gradient(
       145deg,
-      var(--head-light) 0%,
-      var(--head-mid) 42%,
-      var(--head) 68%,
-      var(--head-dark) 100%
+      #86efac 0%,
+      #22c55e 42%,
+      #16a34a 68%,
+      #166534 100%
     );
   box-shadow:
     inset 0 -20px 30px rgba(0, 0, 0, 0.18),
