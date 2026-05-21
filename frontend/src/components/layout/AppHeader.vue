@@ -19,7 +19,7 @@
 
     <div class="flex items-center gap-1.5">
       <a
-        href="#"
+        href="https://www.linkedin.com/in/gabriel-albuquerque-0b0666221/"
         target="_blank"
         rel="noopener"
         aria-label="LinkedIn"
@@ -29,7 +29,7 @@
       </a>
 
       <a
-        href="#"
+        href="https://github.com/Gabriel-Alb"
         target="_blank"
         rel="noopener"
         aria-label="GitHub"
