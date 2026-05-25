@@ -53,6 +53,14 @@ export const registry = [
     ),
   },
   {
+    slug: "MagneticCard",
+    label: "Magnetic Card",
+    category: "components",
+    component: defineAsyncComponent(
+      () => import("../components/ui/magnetic-card/MagneticCardDemo.vue"),
+    ),
+  },
+  {
     slug: "clickspark",
     label: "Click Spark",
     category: "pointer",
