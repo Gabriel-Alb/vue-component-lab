@@ -4,8 +4,13 @@
         ref="areaRef"
         v-bind="$attrs"
         class="magnetic-card-area relative inline-block"
-        :style="{ '--radius': radius }"
-        @click="$emit('click', $event)"
+        :class="[areaClass, disabled ? 'pointer-events-none opacity-60' : 'cursor-pointer']"
+        :style="areaStyle"
+        :tabindex="disabled ? -1 : tabindex"
+        :aria-disabled="disabled ? 'true' : undefined"
+        @click="handleClick"
+        @keydown.enter="handleClick"
+        @keydown.space.prevent="handleClick"
         @pointerdown="handlePointerDown"
         @pointerup="stopClick"
         @pointercancel="stopClick"
@@ -13,43 +18,53 @@
     >
         <article
             ref="cardRef"
-            class="magnetic-card relative h-full w-full overflow-hidden text-white"
+            class="magnetic-card relative h-full w-full overflow-hidden"
             :class="[cardClass, { 'is-clicking': state.clicking }]"
             :style="cardStyle"
         >
             <span
-                v-if="state.rippleVisible"
+                v-if="showRipple && state.rippleVisible"
                 :key="state.rippleKey"
-                class="magnetic-card__ripple pointer-events-none absolute rounded-full bg-white/30"
-                :style="{ left: `${state.rippleX}px`, top: `${state.rippleY}px` }"
+                class="magnetic-card__ripple pointer-events-none absolute rounded-full"
+                :style="rippleStyle"
             />
 
             <div
-                class="relative z-10 flex h-full w-full flex-col justify-between"
+                class="magnetic-card__content relative z-10 h-full w-full"
                 :class="contentClass"
                 :style="contentStyle"
             >
-                <div>
-                    <p
-                        v-if="eyebrow"
-                        class="mb-3 text-sm font-semibold tracking-wide text-white/70"
-                    >
-                        {{ eyebrow }}
-                    </p>
+                <div class="relative z-10 flex h-full w-full flex-col justify-between">
+                    <slot>
+                        <div>
+                            <p
+                                v-if="eyebrow"
+                                :class="eyebrowClass"
+                                :style="{ color: eyebrowColor || mutedTextColor }"
+                            >
+                                {{ eyebrow }}
+                            </p>
 
-                    <h3 class="text-2xl font-semibold leading-tight text-white">
-                        {{ title }}
-                    </h3>
+                            <h3
+                                v-if="title"
+                                :class="titleClass"
+                                :style="{ color: titleColor || textColor }"
+                            >
+                                {{ title }}
+                            </h3>
 
-                    <p
-                        v-if="subtitle"
-                        class="mt-3 text-sm leading-relaxed text-white/70"
-                    >
-                        {{ subtitle }}
-                    </p>
+                            <p
+                                v-if="subtitle"
+                                :class="subtitleClass"
+                                :style="{ color: subtitleColor || mutedTextColor }"
+                            >
+                                {{ subtitle }}
+                            </p>
+                        </div>
+
+                        <slot name="footer" />
+                    </slot>
                 </div>
-
-                <slot name="footer" />
             </div>
         </article>
     </component>
@@ -64,30 +79,72 @@ defineOptions({
 
 const props = defineProps({
     tag: { type: String, default: "div" },
-    title: { type: String, default: "Card Magnético" },
+    href: { type: String, default: "" },
+    target: { type: String, default: "_blank" },
+    disabled: { type: Boolean, default: false },
+    tabindex: { type: Number, default: 0 },
+
+    eyebrow: { type: String, default: "" },
+    title: { type: String, default: "Magnetic Card" },
     subtitle: {
         type: String,
-        default:
-            "Um card moderno com movimento magnético suave, brilho roxo e interação por aproximação.",
+        default: "A modern card with smooth magnetic movement and proximity interaction.",
     },
-    eyebrow: { type: String, default: "" },
 
     activationDistance: { type: Number, default: 200 },
     strength: { type: Number, default: 6 },
     contentStrength: { type: Number, default: 2 },
     hoverScale: { type: Number, default: 1.003 },
     clickScale: { type: Number, default: 0.975 },
+    contentClickScale: { type: Number, default: 0.992 },
 
     radius: { type: String, default: "24px" },
+    background: { type: String, default: "" },
     colorLight: { type: String, default: "#6438ff" },
     colorPrimary: { type: String, default: "#5227ff" },
     colorDark: { type: String, default: "#421bdc" },
 
+    textColor: { type: String, default: "#ffffff" },
+    mutedTextColor: { type: String, default: "rgba(255, 255, 255, 0.7)" },
+    titleColor: { type: String, default: "" },
+    subtitleColor: { type: String, default: "" },
+    eyebrowColor: { type: String, default: "" },
+
+    topGlowColor: { type: String, default: "rgba(255, 255, 255, 0.2)" },
+    bottomGlowColor: { type: String, default: "rgba(43, 10, 143, 0.45)" },
+    overlayStartColor: { type: String, default: "rgba(255, 255, 255, 0.15)" },
+    overlayEndColor: { type: String, default: "rgba(0, 0, 0, 0.2)" },
+    clickOverlayColor: { type: String, default: "rgba(0, 0, 0, 0.1)" },
+
+    showGlows: { type: Boolean, default: true },
+    showOverlay: { type: Boolean, default: true },
+    showRipple: { type: Boolean, default: true },
+    magnetic: { type: Boolean, default: true },
+
+    idleShadow: { type: String, default: "" },
+    activeShadow: { type: String, default: "" },
+    rippleColor: { type: String, default: "rgba(255, 255, 255, 0.3)" },
+    rippleSize: { type: String, default: "22px" },
+    rippleScale: { type: Number, default: 26 },
+
+    areaClass: { type: [String, Array, Object], default: "" },
     cardClass: { type: [String, Array, Object], default: "" },
     contentClass: { type: [String, Array, Object], default: "p-6" },
+    eyebrowClass: {
+        type: [String, Array, Object],
+        default: "mb-3 text-sm font-semibold tracking-wide",
+    },
+    titleClass: {
+        type: [String, Array, Object],
+        default: "text-2xl font-semibold leading-tight",
+    },
+    subtitleClass: {
+        type: [String, Array, Object],
+        default: "mt-3 text-sm leading-relaxed",
+    },
 });
 
-defineEmits(["click"]);
+const emit = defineEmits(["click"]);
 
 const areaRef = ref(null);
 const cardRef = ref(null);
@@ -109,14 +166,27 @@ let frameId = null;
 let clickTimeout = null;
 let rippleTimeout = null;
 
-const cardStyle = computed(() => ({
-    "--light": props.colorLight,
-    "--primary": props.colorPrimary,
-    "--dark": props.colorDark,
+const areaStyle = computed(() => ({
+    "--radius": props.radius,
+    "--top-glow": props.topGlowColor,
+    "--bottom-glow": props.bottomGlowColor,
+    "--overlay-start": props.overlayStartColor,
+    "--overlay-end": props.overlayEndColor,
+    "--click-overlay": props.clickOverlayColor,
+    "--glow-opacity": props.showGlows ? 1 : 0,
+    "--overlay-opacity": props.showOverlay ? 1 : 0,
     borderRadius: props.radius,
+}));
+
+const cardStyle = computed(() => ({
+    borderRadius: props.radius,
+    color: props.textColor,
+    background:
+        props.background ||
+        `linear-gradient(135deg, ${props.colorLight} 0%, ${props.colorPrimary} 48%, ${props.colorDark} 100%)`,
     boxShadow: state.active
-        ? `0 18px 44px ${props.colorPrimary}42`
-        : `0 14px 34px ${props.colorPrimary}30`,
+        ? props.activeShadow || `0 18px 44px ${props.colorPrimary}42`
+        : props.idleShadow || `0 14px 34px ${props.colorPrimary}30`,
     transform: `
         translate3d(${state.x}px, ${state.y}px, 0)
         scale(${state.clicking ? props.clickScale : state.active ? props.hoverScale : 1})
@@ -129,16 +199,28 @@ const cardStyle = computed(() => ({
 const contentStyle = computed(() => ({
     transform: `
         translate3d(${state.contentX}px, ${state.contentY}px, 0)
-        scale(${state.clicking ? 0.992 : 1})
+        scale(${state.clicking ? props.contentClickScale : 1})
     `,
     transitionDuration: state.active ? "180ms" : "420ms",
 }));
 
+const rippleStyle = computed(() => ({
+    left: `${state.rippleX}px`,
+    top: `${state.rippleY}px`,
+    width: props.rippleSize,
+    height: props.rippleSize,
+    background: props.rippleColor,
+    "--ripple-scale": props.rippleScale,
+}));
+
 function handleMouseMove(event) {
+    if (!props.magnetic || props.disabled) return;
+
     cancelAnimationFrame(frameId);
 
     frameId = requestAnimationFrame(() => {
-        const rect = areaRef.value?.getBoundingClientRect();
+        const areaElement = areaRef.value?.$el || areaRef.value;
+        const rect = areaElement?.getBoundingClientRect?.();
 
         if (!rect) return;
 
@@ -185,6 +267,8 @@ function handleMouseMove(event) {
 }
 
 function handlePointerDown(event) {
+    if (props.disabled) return;
+
     const rect = cardRef.value?.getBoundingClientRect();
 
     if (!rect) return;
@@ -212,6 +296,21 @@ function stopClick() {
     clickTimeout = setTimeout(() => {
         state.clicking = false;
     }, 120);
+}
+
+function handleClick(event) {
+    if (props.disabled) return;
+
+    emit("click", event);
+
+    if (!props.href) return;
+
+    if (props.target === "_blank") {
+        window.open(props.href, props.target, "noopener,noreferrer");
+        return;
+    }
+
+    window.location.href = props.href;
 }
 
 function resetPosition() {
@@ -242,12 +341,10 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .magnetic-card-area {
-    border-radius: var(--radius);
     transform: translateZ(0);
 }
 
 .magnetic-card {
-    background: linear-gradient(135deg, var(--light) 0%, var(--primary) 48%, var(--dark) 100%);
     will-change: transform;
 }
 
@@ -258,6 +355,7 @@ onBeforeUnmount(() => {
     pointer-events: none;
     border-radius: 9999px;
     filter: blur(48px);
+    opacity: var(--glow-opacity);
 }
 
 .magnetic-card::before {
@@ -265,7 +363,7 @@ onBeforeUnmount(() => {
     right: -64px;
     width: 192px;
     height: 192px;
-    background: rgb(255 255 255 / 20%);
+    background: var(--top-glow);
 }
 
 .magnetic-card::after {
@@ -273,35 +371,43 @@ onBeforeUnmount(() => {
     left: -64px;
     width: 208px;
     height: 208px;
-    background: rgb(43 10 143 / 45%);
+    background: var(--bottom-glow);
 }
 
-.magnetic-card.is-clicking .magnetic-card__content {
-    opacity: 0.95;
+.magnetic-card__content {
+    transition-property: transform;
+    transition-timing-function: ease-out;
 }
 
-.magnetic-card::selection {
-    background: transparent;
-}
-
-.magnetic-card__ripple {
-    z-index: 5;
-    width: 22px;
-    height: 22px;
-    transform: translate(-50%, -50%) scale(0);
-    animation: magnetic-card-ripple 520ms ease-out forwards;
-}
-
-.magnetic-card::marker {
-    display: none;
-}
-
-.magnetic-card > div::before {
+.magnetic-card__content::before,
+.magnetic-card__content::after {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: linear-gradient(135deg, rgb(255 255 255 / 15%), transparent, rgb(0 0 0 / 20%));
+}
+
+.magnetic-card__content::before {
+    z-index: 0;
+    opacity: var(--overlay-opacity);
+    background: linear-gradient(135deg, var(--overlay-start), transparent, var(--overlay-end));
+}
+
+.magnetic-card__content::after {
+    z-index: 20;
+    opacity: 0;
+    background: var(--click-overlay);
+    transition: opacity 150ms ease-out;
+}
+
+.magnetic-card.is-clicking .magnetic-card__content::after {
+    opacity: 1;
+}
+
+.magnetic-card__ripple {
+    z-index: 30;
+    transform: translate(-50%, -50%) scale(0);
+    animation: magnetic-card-ripple 520ms ease-out forwards;
 }
 
 @keyframes magnetic-card-ripple {
@@ -312,7 +418,7 @@ onBeforeUnmount(() => {
 
     to {
         opacity: 0;
-        transform: translate(-50%, -50%) scale(26);
+        transform: translate(-50%, -50%) scale(var(--ripple-scale));
     }
 }
 
