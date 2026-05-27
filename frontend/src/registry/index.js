@@ -69,6 +69,14 @@ export const registry = [
     ),
   },
   {
+    slug: "SkillButtons",
+    label: "Skill Buttons",
+    category: "components",
+    component: defineAsyncComponent(
+      () => import("../components/ui/SkillButtons/SkillButtonsDemo.vue"),
+    ),
+  },
+  {
     slug: "clickspark",
     label: "Click Spark",
     category: "pointer",
