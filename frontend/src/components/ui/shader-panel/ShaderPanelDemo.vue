@@ -21,10 +21,7 @@ import ShaderPanel from './ShaderPanel.vue';
 </script>
 
 <style scoped>
-/*
-  Remove o padding do preview do HomeView apenas enquanto essa demo estiver renderizada.
-  Assim o shader fica grudado dentro da área principal, sem criar um card interno.
-*/
+
 :global(.content-scroll) {
   padding: 0 !important;
   overflow: hidden !important;
