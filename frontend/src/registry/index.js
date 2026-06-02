@@ -77,6 +77,14 @@ export const registry = [
     ),
   },
   {
+    slug: "GradientCarousel",
+    label: "Gradient Carousel ",
+    category: "components",
+    component: defineAsyncComponent(
+      () => import("../components/ui/GradientCarousel/GradientCarouselDemo.vue"),
+    ),
+  },
+  {
     slug: "clickspark",
     label: "Click Spark",
     category: "pointer",
@@ -84,7 +92,7 @@ export const registry = [
       () => import("../components/ui/ClickSpark/ClickSparkDemo.vue"),
     ),
   },
-      {
+  {
     slug: "ShaderPanel",
     label: "Shader Panel",
     category: "Backgrounds",
