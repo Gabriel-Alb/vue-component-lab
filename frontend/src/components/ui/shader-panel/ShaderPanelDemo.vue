@@ -5,7 +5,7 @@
       :zoom="2.0"
       :wave-strength="1.42"
       :softness="0.60"
-      :mouse-strength="0.00"
+      :mouse-strength="0.09"
       :color-a="[0.00, 0.00, 0.00]"
       :color-b="[0.12, 0.06, 0.32]"
       :color-c="[0.32, 0.15, 1.00]"
