@@ -8,5 +8,5 @@
 </template>
 
 <script setup>
-import CircularText from '../CircularText/CircularText.vue'
+import CircularText from './CircularText.vue'
 </script>
