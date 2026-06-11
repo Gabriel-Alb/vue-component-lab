@@ -7,7 +7,7 @@ export const registry = [
     category: "Text",
     component: defineAsyncComponent(
       () =>
-        import("../components/ui/animated-text/CircularText/CircularTextDemo.vue"),
+        import("../components/ui/AnimatedText/CircularText/CircularTextDemo.vue"),
     ),
   },
   {
@@ -16,7 +16,7 @@ export const registry = [
     category: "Text",
     component: defineAsyncComponent(
       () =>
-        import("../components/ui/animated-text/TypewriterText/TypewriterTextDemo.vue"),
+        import("../components/ui/AnimatedText/TypewriterText/TypewriterTextDemo.vue"),
     ),
   },
   {
@@ -25,7 +25,7 @@ export const registry = [
     category: "components",
     component: defineAsyncComponent(
       () =>
-        import("../components/ui/AnimatedJoaoBobo/AnimatedJoaoBoboDemo.vue"),
+        import("../components/ui/AnimatedWobble/AnimatedWobbleDemo.vue/index.js"),
     ),
   },
   {
@@ -41,7 +41,7 @@ export const registry = [
     label: "Magnetic Dot",
     category: "components",
     component: defineAsyncComponent(
-      () => import("../components/ui/magnetic-dot/MagneticDotDemo.vue"),
+      () => import("../components/ui/MagneticDot/MagneticDotDemo.vue"),
     ),
   },
   {
@@ -49,7 +49,7 @@ export const registry = [
     label: "Magnetic Button",
     category: "components",
     component: defineAsyncComponent(
-      () => import("../components/ui/magnetic-button/MagneticButtonDemo.vue"),
+      () => import("../components/ui/MagneticButton/MagneticButtonDemo.vue"),
     ),
   },
   {
@@ -57,7 +57,7 @@ export const registry = [
     label: "Magnetic Card",
     category: "components",
     component: defineAsyncComponent(
-      () => import("../components/ui/magnetic-card/MagneticCardDemo.vue"),
+      () => import("../components/ui/MagneticCard/MagneticCardDemo.vue"),
     ),
   },
   {
@@ -65,7 +65,7 @@ export const registry = [
     label: "3D card",
     category: "components",
     component: defineAsyncComponent(
-      () => import("../components/ui/3D-card/Card3dDemo.vue"),
+      () => import("../components/ui/Card3d/Card3dDemo.vue"),
     ),
   },
   {
@@ -73,7 +73,7 @@ export const registry = [
     label: "Skill Buttons",
     category: "components",
     component: defineAsyncComponent(
-      () => import("../components/ui/SkillButtons/SkillButtonsDemo.vue"),
+      () => import("../components/ui/TagButtons/TagButtonsDemo.vue/index.js"),
     ),
   },
   {
@@ -97,7 +97,7 @@ export const registry = [
     label: "Shader Panel",
     category: "Backgrounds",
     component: defineAsyncComponent(
-      () => import("../components/ui/shader-panel/ShaderPanelDemo.vue"),
+      () => import("../components/ui/ShaderPanel/ShaderPanelDemo.vue"),
     ),
   },
 ];

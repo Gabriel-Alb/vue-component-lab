@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-import FallingSkillButtons from './SkillButtons.vue'
+import FallingSkillButtons from './TagButtons.vue'
 
 const buttons = [
   {

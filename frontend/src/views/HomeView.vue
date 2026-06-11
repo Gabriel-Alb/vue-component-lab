@@ -54,7 +54,7 @@ import { ref, computed, watch } from 'vue'
 import AppHeader from '../components/layout/AppHeader.vue'
 import AppSidebar from '../components/layout/AppSidebar.vue'
 import ViewToggle from '../components/layout/ViewToggle.vue'
-import CodeBlock from '../components/ui/CodeBlock.vue'
+import CodeBlock from '../components/ui/CodeBlock/CodeBlock.vue/index.js'
 
 import { useBreakpoint } from '../composables/useBreakpoint'
 import { useComponentRegistry } from '../composables/useComponentRegistry'
