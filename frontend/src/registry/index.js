@@ -85,6 +85,15 @@ export const registry = [
     ),
   },
   {
+    slug: "elastic-buttonRuler",
+    label: "Elastic Button Ruler",
+    category: "components",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/ElasticButtonRuler/ElasticButtonRulerDemo.vue"),
+    ),
+  },
+  {
     slug: "click-spark",
     label: "Click Spark",
     category: "pointer",
