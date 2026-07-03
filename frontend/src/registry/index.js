@@ -102,6 +102,14 @@ export const registry = [
     ),
   },
   {
+    slug: "reveal-timeline",
+    label: "Reveal Timeline",
+    category: "pointer",
+    component: defineAsyncComponent(
+      () => import("../components/ui/RevealTimeline/RevealTimelineDemo.vue"),
+    ),
+  },
+  {
     slug: "shader-panel",
     label: "Shader Panel",
     category: "Backgrounds",
