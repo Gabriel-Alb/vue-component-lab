@@ -35,6 +35,14 @@ export const registry = [
       () => import("../components/ui/AnimatedFolder/AnimatedFolderDemo.vue"),
     ),
   },
+    {
+    slug: "preview-folder",
+    label: "Preview Folder",
+    category: "components",
+    component: defineAsyncComponent(
+      () => import("../components/ui/PreviewFolder/PreviewFolderDemo.vue"),
+    ),
+  },
   {
     slug: "magnetic-dot",
     label: "Magnetic Dot",
