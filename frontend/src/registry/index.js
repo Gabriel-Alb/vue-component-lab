@@ -101,6 +101,15 @@ export const registry = [
         import("../components/ui/ElasticButtonRuler/ElasticButtonRulerDemo.vue"),
     ),
   },
+    {
+    slug: "notification-list",
+    label: "Notification List",
+    category: "components",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/NotificationList/NotificationListDemo.vue"),
+    ),
+  },
   {
     slug: "click-spark",
     label: "Click Spark",
