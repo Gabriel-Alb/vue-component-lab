@@ -35,7 +35,7 @@ export const registry = [
       () => import("../components/ui/AnimatedFolder/AnimatedFolderDemo.vue"),
     ),
   },
-    {
+  {
     slug: "preview-folder",
     label: "Preview Folder",
     category: "components",
@@ -101,13 +101,22 @@ export const registry = [
         import("../components/ui/ElasticButtonRuler/ElasticButtonRulerDemo.vue"),
     ),
   },
-    {
+  {
     slug: "notification-list",
     label: "Notification List",
     category: "components",
     component: defineAsyncComponent(
       () =>
         import("../components/ui/NotificationList/NotificationListDemo.vue"),
+    ),
+  },
+  {
+    slug: "organic-card",
+    label: "Organic Card",
+    category: "components",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/OrganicCard/OrganicCardDemo.vue"),
     ),
   },
   {
