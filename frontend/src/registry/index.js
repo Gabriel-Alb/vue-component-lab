@@ -111,6 +111,15 @@ export const registry = [
     ),
   },
   {
+    slug: "floating-orbit-cards ",
+    label: "Floating Orbit Cards ",
+    category: "components",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/FloatingOrbitCards/FloatingOrbitCardsDemo.vue"),
+    ),
+  },
+  {
     slug: "click-spark",
     label: "Click Spark",
     category: "pointer",
