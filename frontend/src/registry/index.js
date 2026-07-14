@@ -111,15 +111,6 @@ export const registry = [
     ),
   },
   {
-    slug: "organic-card",
-    label: "Organic Card",
-    category: "components",
-    component: defineAsyncComponent(
-      () =>
-        import("../components/ui/OrganicCard/OrganicCardDemo.vue"),
-    ),
-  },
-  {
     slug: "click-spark",
     label: "Click Spark",
     category: "pointer",
