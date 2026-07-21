@@ -1,7 +1,10 @@
 <template>
     <div
         class="animated-folder-card relative flex w-full max-w-[340px] flex-col items-center bg-transparent p-0 text-center transition-all duration-300 hover:-translate-y-1"
-        :class="folderClasses"
+        :class="[
+            `is-${folderState}`,
+            { 'is-expanded': isOpenOrOpening },
+        ]"
         :style="folderStyle"
         tabindex="0"
         @mouseenter="handleMouseEnter"
@@ -9,7 +12,6 @@
         @click="handleCardClick"
         @keydown.escape="closeFolder()"
     >
-        <!-- Background glow -->
         <div
             aria-hidden="true"
             class="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-500"
@@ -20,42 +22,40 @@
             />
         </div>
 
-        <!-- Folder scene -->
         <div class="folder-scene relative h-[290px] w-[300px]">
-            <!-- Main click area -->
             <button
                 type="button"
                 class="folder-trigger absolute inset-x-0 bottom-8 z-20 h-[190px] cursor-pointer border-0 bg-transparent p-0"
                 :aria-label="triggerAriaLabel"
                 :aria-expanded="isOpenOrOpening"
-                :disabled="isTriggerDisabled"
+                :disabled="isAnimating"
                 @click.stop="handleTriggerClick"
             />
 
-            <!-- Floating papers/buttons -->
             <div class="floating-papers">
                 <button
-                    v-for="(paper, index) in visiblePapers"
-                    :key="getPaperKey(paper, index)"
+                    v-for="paper in visiblePapers"
+                    :key="paper.key"
                     type="button"
                     class="floating-paper"
-                    :class="`floating-paper-${index + 1}`"
-                    :aria-label="getPaperAriaLabel(paper, index)"
-                    :disabled="arePapersDisabled"
-                    @click.stop="selectPaper(paper)"
+                    :style="paper.style"
+                    :aria-label="paper.ariaLabel"
+                    :disabled="!isExpanded"
+                    @click.stop="selectPaper(paper.original)"
                 >
-                    <span>{{ getPaperLabel(paper, index) }}</span>
+                    <span>{{ paper.label }}</span>
                 </button>
             </div>
 
-            <!-- Papers inside folder on hover -->
             <div class="inside-papers" aria-hidden="true">
-                <div class="inside-paper inside-paper-front" />
-                <div class="inside-paper inside-paper-middle" />
-                <div class="inside-paper inside-paper-back" />
+                <div
+                    v-for="layer in insidePaperLayers"
+                    :key="layer"
+                    class="inside-paper"
+                    :class="`inside-paper-${layer}`"
+                />
             </div>
 
-            <!-- Folder body -->
             <div class="folder-tab" aria-hidden="true" />
             <div class="folder-back" aria-hidden="true" />
             <div class="folder-front" aria-hidden="true" />
@@ -132,51 +132,102 @@ const ANIMATION_DURATION = {
     labelReturn: 180,
 }
 
+const PAPER_STYLES = [
+    {
+        '--paper-open-x': '-104px',
+        '--paper-open-y': '-88px',
+        '--paper-open-rotate': '-13deg',
+        '--paper-start-x': '-18px',
+        '--paper-start-y': '9px',
+        '--paper-start-rotate': '-6deg',
+        '--paper-expanded-background': 'var(--paper-middle)',
+        '--paper-hover-scale': '1.08',
+    },
+    {
+        '--paper-open-y': '-126px',
+        '--paper-open-rotate': '4deg',
+        '--paper-open-scale': '1.04',
+        '--paper-start-y': '6px',
+        '--paper-start-rotate': '2deg',
+        '--paper-delay': '34ms',
+        '--paper-expanded-background': 'var(--paper-back)',
+        '--paper-hover-scale': '1.12',
+    },
+    {
+        '--paper-open-x': '104px',
+        '--paper-open-y': '-88px',
+        '--paper-open-rotate': '13deg',
+        '--paper-start-x': '18px',
+        '--paper-start-y': '9px',
+        '--paper-start-rotate': '6deg',
+        '--paper-delay': '68ms',
+        '--paper-expanded-background': 'var(--paper-middle)',
+        '--paper-hover-scale': '1.08',
+    },
+]
+
+const insidePaperLayers = ['front', 'middle', 'back']
+
 const folderState = ref(FOLDER_STATE.IDLE)
 
-let openingTimer = null
-let closingTimer = null
+let animationTimer = null
 let pendingSelectedPaper = null
 
-// The visual composition supports up to 3 floating papers.
-const visiblePapers = computed(() => props.papers.slice(0, 3))
+const isExpanded = computed(
+    () => folderState.value === FOLDER_STATE.EXPANDED,
+)
 
-const isIdle = computed(() => folderState.value === FOLDER_STATE.IDLE)
-const isHovering = computed(() => folderState.value === FOLDER_STATE.HOVERING)
-const isOpening = computed(() => folderState.value === FOLDER_STATE.OPENING)
-const isFullyExpanded = computed(() => folderState.value === FOLDER_STATE.EXPANDED)
-const isReturning = computed(() => folderState.value === FOLDER_STATE.RETURNING)
+const isAnimating = computed(
+    () =>
+        folderState.value === FOLDER_STATE.OPENING ||
+        folderState.value === FOLDER_STATE.RETURNING,
+)
 
-const isAnimating = computed(() => isOpening.value || isReturning.value)
+const isOpenOrOpening = computed(
+    () =>
+        folderState.value === FOLDER_STATE.OPENING ||
+        folderState.value === FOLDER_STATE.EXPANDED,
+)
 
-const isOpenOrOpening = computed(() => (
-    folderState.value === FOLDER_STATE.OPENING ||
-    folderState.value === FOLDER_STATE.EXPANDED
-))
+const showBackgroundGlow = computed(
+    () => folderState.value !== FOLDER_STATE.IDLE,
+)
 
-const showBackgroundGlow = computed(() => (
-    isHovering.value ||
-    isOpenOrOpening.value ||
-    isReturning.value
-))
+const triggerAriaLabel = computed(
+    () => (isExpanded.value ? 'Fechar pasta' : 'Abrir pasta'),
+)
 
-const isTriggerDisabled = computed(() => isAnimating.value)
+const visiblePapers = computed(() =>
+    props.papers.slice(0, 3).map((paper, index) => {
+        const fallbackLabel = `Paper ${index + 1}`
 
-const arePapersDisabled = computed(() => (
-    !isFullyExpanded.value ||
-    isAnimating.value
-))
+        const label =
+            typeof paper === 'string'
+                ? paper || fallbackLabel
+                : paper?.label ||
+                  paper?.title ||
+                  paper?.value ||
+                  fallbackLabel
 
-const triggerAriaLabel = computed(() => (
-    isFullyExpanded.value ? 'Fechar pasta' : 'Abrir pasta'
-))
+        const rawKey =
+            typeof paper === 'object' && paper !== null
+                ? paper.id ||
+                  paper.value ||
+                  paper.to ||
+                  paper.href ||
+                  paper.label ||
+                  label
+                : paper || label
 
-const folderClasses = computed(() => ({
-    'is-hovering': isHovering.value,
-    'is-expanded': isOpenOrOpening.value,
-    'is-opening': isOpening.value,
-    'is-returning': isReturning.value,
-}))
+        return {
+            original: paper,
+            label,
+            key: `paper-${index}-${String(rawKey)}`,
+            ariaLabel: `Selecionar ${label}`,
+            style: PAPER_STYLES[index],
+        }
+    }),
+)
 
 const folderStyle = computed(() => ({
     '--folder-main': props.color,
@@ -184,13 +235,11 @@ const folderStyle = computed(() => ({
     '--folder-dark': props.colorDark,
     '--folder-neutral': props.neutralColor,
     '--folder-focus': 'rgba(82, 39, 255, 0.85)',
-
     '--paper-front': props.paperFrontColor,
     '--paper-middle': props.paperMiddleColor,
     '--paper-back': props.paperBackColor,
     '--paper-hover': props.paperHoverColor,
     '--paper-text': props.paperTextColor,
-
     '--folder-open-duration': `${ANIMATION_DURATION.opening}ms`,
     '--folder-close-duration': `${ANIMATION_DURATION.closing}ms`,
     '--paper-open-duration': `${ANIMATION_DURATION.opening}ms`,
@@ -199,49 +248,30 @@ const folderStyle = computed(() => ({
     '--paper-label-return-duration': `${ANIMATION_DURATION.labelReturn}ms`,
 }))
 
-function getPaperLabel(paper, index) {
-    if (typeof paper === 'string') {
-        return paper || `Paper ${index + 1}`
-    }
+function clearAnimationTimer() {
+    if (!animationTimer) return
 
-    return paper?.label || paper?.title || paper?.value || `Paper ${index + 1}`
+    clearTimeout(animationTimer)
+    animationTimer = null
 }
 
-function getPaperKey(paper, index) {
-    const fallbackLabel = getPaperLabel(paper, index)
+function startAnimationTimer(duration, callback) {
+    clearAnimationTimer()
 
-    const rawKey = typeof paper === 'object' && paper !== null
-        ? paper.id || paper.value || paper.to || paper.href || paper.label
-        : paper
-
-    return `paper-${index}-${String(rawKey || fallbackLabel)}`
-}
-
-function getPaperAriaLabel(paper, index) {
-    return `Selecionar ${getPaperLabel(paper, index)}`
-}
-
-function clearAnimationTimers() {
-    if (openingTimer) {
-        clearTimeout(openingTimer)
-    }
-
-    if (closingTimer) {
-        clearTimeout(closingTimer)
-    }
-
-    openingTimer = null
-    closingTimer = null
+    animationTimer = setTimeout(() => {
+        animationTimer = null
+        callback()
+    }, duration)
 }
 
 function handleMouseEnter() {
-    if (!isIdle.value || isAnimating.value) return
+    if (folderState.value !== FOLDER_STATE.IDLE) return
 
     folderState.value = FOLDER_STATE.HOVERING
 }
 
 function handleMouseLeave() {
-    if (!isHovering.value || isAnimating.value) return
+    if (folderState.value !== FOLDER_STATE.HOVERING) return
 
     folderState.value = FOLDER_STATE.IDLE
 }
@@ -249,7 +279,7 @@ function handleMouseLeave() {
 function handleTriggerClick() {
     if (isAnimating.value) return
 
-    if (isFullyExpanded.value) {
+    if (isExpanded.value) {
         closeFolder()
         return
     }
@@ -258,30 +288,29 @@ function handleTriggerClick() {
 }
 
 function openFolder() {
-    if (isAnimating.value || (!isIdle.value && !isHovering.value)) return
+    const canOpen =
+        folderState.value === FOLDER_STATE.IDLE ||
+        folderState.value === FOLDER_STATE.HOVERING
 
-    clearAnimationTimers()
+    if (!canOpen) return
 
     pendingSelectedPaper = null
     folderState.value = FOLDER_STATE.OPENING
 
     emit('open')
 
-    openingTimer = setTimeout(() => {
+    startAnimationTimer(ANIMATION_DURATION.opening, () => {
         folderState.value = FOLDER_STATE.EXPANDED
-        openingTimer = null
-    }, ANIMATION_DURATION.opening)
+    })
 }
 
 function closeFolder(selectedPaper = null) {
-    if (!isFullyExpanded.value || isAnimating.value) return
-
-    clearAnimationTimers()
+    if (!isExpanded.value) return
 
     pendingSelectedPaper = selectedPaper
     folderState.value = FOLDER_STATE.RETURNING
 
-    closingTimer = setTimeout(() => {
+    startAnimationTimer(ANIMATION_DURATION.closing, () => {
         folderState.value = FOLDER_STATE.IDLE
 
         emit('close')
@@ -291,68 +320,40 @@ function closeFolder(selectedPaper = null) {
         }
 
         pendingSelectedPaper = null
-        closingTimer = null
-    }, ANIMATION_DURATION.closing)
+    })
 }
 
 function selectPaper(paper) {
-    if (!isFullyExpanded.value || isAnimating.value || !paper) return
+    if (!isExpanded.value || !paper) return
 
     closeFolder(paper)
 }
 
 function handleCardClick(event) {
-    if (!isFullyExpanded.value || isAnimating.value) return
-
-    const clickedPaper = event.target.closest?.('.floating-paper')
-
-    if (clickedPaper) return
+    if (!isExpanded.value) return
+    if (event.target.closest?.('.floating-paper')) return
 
     closeFolder()
 }
 
-onBeforeUnmount(() => {
-    clearAnimationTimers()
-})
+onBeforeUnmount(clearAnimationTimer)
 </script>
 
 <style scoped>
-/* Base */
 .animated-folder-card {
-    --paper-front: #e0e0e0;
-    --paper-middle: #eeeeee;
-    --paper-back: #ffffff;
-    --paper-hover: #ffffff;
-    --paper-text: rgba(20, 20, 20, 0.62);
-
-    --folder-main: #5227ff;
-    --folder-light: #6438ff;
-    --folder-dark: #421bdc;
-    --folder-neutral: #4253c0;
-    --folder-focus: rgba(82, 39, 255, 0.85);
-
-    --folder-open-duration: 680ms;
-    --folder-close-duration: 620ms;
     --folder-motion-duration: var(--folder-open-duration);
-
-    --paper-open-duration: 680ms;
-    --paper-return-duration: 560ms;
-    --paper-label-open-duration: 360ms;
-    --paper-label-return-duration: 180ms;
 }
 
 .animated-folder-card.is-returning {
     --folder-motion-duration: var(--folder-close-duration);
 }
 
-/* Scene */
 .folder-scene {
     perspective: 1100px;
     transform-style: preserve-3d;
     isolation: isolate;
 }
 
-/* Folder */
 .folder-trigger:disabled {
     cursor: default;
 }
@@ -389,7 +390,8 @@ onBeforeUnmount(() => {
         0 22px 44px rgba(0, 0, 0, 0.22);
     transform: translateY(0);
     transition:
-        transform var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1),
+        transform var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1),
         box-shadow var(--folder-motion-duration) ease;
 }
 
@@ -402,7 +404,6 @@ onBeforeUnmount(() => {
     height: 46px;
     border-radius: 11px 11px 0 0;
     background: var(--folder-neutral);
-    box-shadow: none;
 }
 
 .folder-tab::after {
@@ -426,7 +427,11 @@ onBeforeUnmount(() => {
     height: 158px;
     border-radius: 18px 18px 26px 26px;
     background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 36%),
+        linear-gradient(
+            180deg,
+            rgba(255, 255, 255, 0.08),
+            transparent 36%
+        ),
         linear-gradient(
             145deg,
             var(--folder-light) 0%,
@@ -441,16 +446,20 @@ onBeforeUnmount(() => {
     transform: translateY(0) scaleX(1) scaleY(1) skewX(0deg);
     clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
     transition:
-        left var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1),
-        width var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1),
-        bottom var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1),
-        transform var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1),
-        clip-path var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1),
+        left var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1),
+        width var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1),
+        bottom var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1),
+        transform var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1),
+        clip-path var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1),
         border-radius var(--folder-motion-duration) ease,
         filter var(--folder-motion-duration) ease;
 }
 
-/* Inside papers */
 .inside-papers {
     position: absolute;
     left: 50%;
@@ -475,7 +484,8 @@ onBeforeUnmount(() => {
     transform-origin: bottom center;
     transition:
         opacity 280ms ease,
-        transform var(--folder-motion-duration) cubic-bezier(0.2, 0.85, 0.2, 1);
+        transform var(--folder-motion-duration)
+            cubic-bezier(0.2, 0.85, 0.2, 1);
 }
 
 .inside-paper-front {
@@ -502,7 +512,6 @@ onBeforeUnmount(() => {
     transition-delay: 80ms;
 }
 
-/* Floating papers */
 .floating-papers {
     position: absolute;
     inset: 0;
@@ -515,14 +524,14 @@ onBeforeUnmount(() => {
     --paper-open-y: -110px;
     --paper-open-rotate: 0deg;
     --paper-open-scale: 1;
-
     --paper-start-x: 0px;
     --paper-start-y: 8px;
     --paper-start-rotate: 0deg;
     --paper-start-scale: 0.52;
-
     --paper-delay: 0ms;
     --paper-return-delay: 0ms;
+    --paper-expanded-background: var(--paper-front);
+    --paper-hover-scale: 1.08;
 
     position: absolute;
     left: 50%;
@@ -545,7 +554,11 @@ onBeforeUnmount(() => {
     opacity: 0;
     transform:
         translateX(-50%)
-        translate3d(var(--paper-start-x), var(--paper-start-y), 0)
+        translate3d(
+            var(--paper-start-x),
+            var(--paper-start-y),
+            0
+        )
         rotate(var(--paper-start-rotate))
         scale(var(--paper-start-scale));
     transform-origin: center;
@@ -577,52 +590,6 @@ onBeforeUnmount(() => {
         transform 260ms cubic-bezier(0.2, 0.85, 0.2, 1);
 }
 
-.floating-paper-1 {
-    --paper-open-x: -104px;
-    --paper-open-y: -88px;
-    --paper-open-rotate: -13deg;
-    --paper-open-scale: 1;
-
-    --paper-start-x: -18px;
-    --paper-start-y: 9px;
-    --paper-start-rotate: -6deg;
-    --paper-start-scale: 0.52;
-
-    --paper-delay: 0ms;
-    --paper-return-delay: 0ms;
-}
-
-.floating-paper-2 {
-    --paper-open-x: 0px;
-    --paper-open-y: -126px;
-    --paper-open-rotate: 4deg;
-    --paper-open-scale: 1.04;
-
-    --paper-start-x: 0px;
-    --paper-start-y: 6px;
-    --paper-start-rotate: 2deg;
-    --paper-start-scale: 0.52;
-
-    --paper-delay: 34ms;
-    --paper-return-delay: 0ms;
-}
-
-.floating-paper-3 {
-    --paper-open-x: 104px;
-    --paper-open-y: -88px;
-    --paper-open-rotate: 13deg;
-    --paper-open-scale: 1;
-
-    --paper-start-x: 18px;
-    --paper-start-y: 9px;
-    --paper-start-rotate: 6deg;
-    --paper-start-scale: 0.52;
-
-    --paper-delay: 68ms;
-    --paper-return-delay: 0ms;
-}
-
-/* States */
 .animated-folder-card.is-hovering .folder-shadow {
     width: 225px;
     opacity: 0.95;
@@ -647,12 +614,7 @@ onBeforeUnmount(() => {
     bottom: 120px;
     width: 280px;
     transform: translateY(36px) scaleY(0.58) skewX(0deg);
-    clip-path: polygon(
-        0 0,
-        100% 0,
-        91.5% 100%,
-        8.5% 100%
-    );
+    clip-path: polygon(0 0, 100% 0, 91.5% 100%, 8.5% 100%);
     border-radius: 22px 22px 34px 34px;
     filter: saturate(1.08);
 }
@@ -662,12 +624,7 @@ onBeforeUnmount(() => {
     bottom: 60px;
     width: 280px;
     transform: translateY(2px) scaleY(0.54) skewX(0deg);
-    clip-path: polygon(
-        0 0,
-        100% 0,
-        88% 100%,
-        12% 100%
-    );
+    clip-path: polygon(0 0, 100% 0, 88% 100%, 12% 100%);
     border-radius: 22px 22px 36px 36px;
     filter: saturate(1.12);
 }
@@ -712,15 +669,24 @@ onBeforeUnmount(() => {
 
 .animated-folder-card.is-expanded .floating-paper {
     opacity: 1;
+    background: var(--paper-expanded-background);
     transform:
         translateX(-50%)
-        translate3d(var(--paper-open-x), var(--paper-open-y), 0)
+        translate3d(
+            var(--paper-open-x),
+            var(--paper-open-y),
+            0
+        )
         rotate(var(--paper-open-rotate))
         scale(var(--paper-open-scale));
 }
 
 .animated-folder-card.is-opening .floating-paper {
-    animation: floatingPaperOpen var(--paper-open-duration) cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation:
+        floatingPaperOpen
+        var(--paper-open-duration)
+        cubic-bezier(0.22, 1, 0.36, 1)
+        both;
     animation-delay: var(--paper-delay);
     transition:
         background 200ms ease,
@@ -728,7 +694,12 @@ onBeforeUnmount(() => {
 }
 
 .animated-folder-card.is-returning .floating-paper {
-    animation: floatingPaperReturn var(--paper-return-duration) cubic-bezier(0.45, 0, 0.25, 1) both;
+    background: var(--paper-expanded-background);
+    animation:
+        floatingPaperReturn
+        var(--paper-return-duration)
+        cubic-bezier(0.45, 0, 0.25, 1)
+        both;
     animation-delay: var(--paper-return-delay);
     transition:
         background 200ms ease,
@@ -742,71 +713,48 @@ onBeforeUnmount(() => {
 }
 
 .animated-folder-card.is-opening .floating-paper span {
-    animation: floatingPaperLabelOpen var(--paper-label-open-duration) ease both;
+    animation:
+        floatingPaperLabelOpen
+        var(--paper-label-open-duration)
+        ease
+        both;
     animation-delay: calc(var(--paper-delay) + 170ms);
     transition: none;
 }
 
 .animated-folder-card.is-returning .floating-paper span {
-    animation: floatingPaperLabelReturn var(--paper-label-return-duration) ease both;
+    animation:
+        floatingPaperLabelReturn
+        var(--paper-label-return-duration)
+        ease
+        both;
     transition: none;
 }
 
-.animated-folder-card.is-expanded .floating-paper-1,
-.animated-folder-card.is-returning .floating-paper-1 {
-    background: var(--paper-middle);
-}
-
-.animated-folder-card.is-expanded .floating-paper-2,
-.animated-folder-card.is-returning .floating-paper-2 {
-    background: var(--paper-back);
-}
-
-.animated-folder-card.is-expanded .floating-paper-3,
-.animated-folder-card.is-returning .floating-paper-3 {
-    background: var(--paper-middle);
-}
-
-.animated-folder-card.is-expanded:not(.is-opening):not(.is-returning) .floating-paper-1:hover {
+.animated-folder-card.is-expanded:not(.is-opening):not(.is-returning)
+    .floating-paper:hover {
     transform:
         translateX(-50%)
-        translate3d(-104px, -88px, 0)
-        rotate(-13deg)
-        scale(1.08);
+        translate3d(
+            var(--paper-open-x),
+            var(--paper-open-y),
+            0
+        )
+        rotate(var(--paper-open-rotate))
+        scale(var(--paper-hover-scale));
 }
 
-.animated-folder-card.is-expanded:not(.is-opening):not(.is-returning) .floating-paper-2:hover {
-    transform:
-        translateX(-50%)
-        translate3d(0, -126px, 0)
-        rotate(4deg)
-        scale(1.12);
-}
-
-.animated-folder-card.is-expanded:not(.is-opening):not(.is-returning) .floating-paper-3:hover {
-    transform:
-        translateX(-50%)
-        translate3d(104px, -88px, 0)
-        rotate(13deg)
-        scale(1.08);
-}
-
-/* Animations */
 @keyframes floatingPaperOpen {
-    0% {
-        opacity: 0;
-        transform:
-            translateX(-50%)
-            translate3d(var(--paper-start-x), var(--paper-start-y), 0)
-            rotate(var(--paper-start-rotate))
-            scale(var(--paper-start-scale));
-    }
-
+    0%,
     14% {
         opacity: 0;
         transform:
             translateX(-50%)
-            translate3d(var(--paper-start-x), var(--paper-start-y), 0)
+            translate3d(
+                var(--paper-start-x),
+                var(--paper-start-y),
+                0
+            )
             rotate(var(--paper-start-rotate))
             scale(var(--paper-start-scale));
     }
@@ -819,7 +767,11 @@ onBeforeUnmount(() => {
         opacity: 1;
         transform:
             translateX(-50%)
-            translate3d(var(--paper-open-x), var(--paper-open-y), 0)
+            translate3d(
+                var(--paper-open-x),
+                var(--paper-open-y),
+                0
+            )
             rotate(var(--paper-open-rotate))
             scale(var(--paper-open-scale));
     }
@@ -830,7 +782,11 @@ onBeforeUnmount(() => {
         opacity: 1;
         transform:
             translateX(-50%)
-            translate3d(var(--paper-open-x), var(--paper-open-y), 0)
+            translate3d(
+                var(--paper-open-x),
+                var(--paper-open-y),
+                0
+            )
             rotate(var(--paper-open-rotate))
             scale(var(--paper-open-scale));
     }
@@ -870,37 +826,40 @@ onBeforeUnmount(() => {
         opacity: 0;
         transform:
             translateX(-50%)
-            translate3d(var(--paper-start-x), var(--paper-start-y), 0)
+            translate3d(
+                var(--paper-start-x),
+                var(--paper-start-y),
+                0
+            )
             rotate(var(--paper-start-rotate))
             scale(var(--paper-start-scale));
     }
 }
 
 @keyframes floatingPaperLabelOpen {
-    0% {
+    from {
         opacity: 0;
         transform: translate3d(0, 10px, 0);
     }
 
-    100% {
+    to {
         opacity: 1;
         transform: translate3d(0, 0, 0);
     }
 }
 
 @keyframes floatingPaperLabelReturn {
-    0% {
+    from {
         opacity: 1;
         transform: translate3d(0, 0, 0);
     }
 
-    100% {
+    to {
         opacity: 0;
         transform: translate3d(0, 8px, 0);
     }
 }
 
-/* Accessibility */
 .animated-folder-card:focus-visible,
 .folder-trigger:focus-visible,
 .floating-paper:focus-visible {
@@ -918,7 +877,6 @@ onBeforeUnmount(() => {
     }
 }
 
-/* Responsive */
 @media (max-width: 420px) {
     .animated-folder-card {
         max-width: 300px;
