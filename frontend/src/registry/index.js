@@ -28,6 +28,15 @@ export const registry = [
         import("../components/ui/AnimatedText/AnimatedNeonTitle/AnimatedNeonTitleDemo.vue"),
     ),
   },
+      {
+    slug: "wave-title",
+    label: "Wave Title",
+    category: "Text",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/AnimatedText/WaveTitle/WaveTitleDemo.vue"),
+    ),
+  },
   {
     slug: "joao-bobo",
     label: "João bobo",
