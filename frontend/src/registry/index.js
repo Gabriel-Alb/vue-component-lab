@@ -19,6 +19,15 @@ export const registry = [
         import("../components/ui/AnimatedText/TypewriterText/TypewriterTextDemo.vue"),
     ),
   },
+    {
+    slug: "animated-neon",
+    label: "Animated Neon",
+    category: "Text",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/AnimatedText/AnimatedNeonTitle/AnimatedNeonTitleDemo.vue"),
+    ),
+  },
   {
     slug: "joao-bobo",
     label: "João bobo",
