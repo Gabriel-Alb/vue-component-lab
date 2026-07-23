@@ -19,13 +19,29 @@ export const registry = [
         import("../components/ui/AnimatedText/TypewriterText/TypewriterTextDemo.vue"),
     ),
   },
-    {
+  {
     slug: "animated-neon",
     label: "Animated Neon",
     category: "Text",
     component: defineAsyncComponent(
       () =>
         import("../components/ui/AnimatedText/AnimatedNeonTitle/AnimatedNeonTitleDemo.vue"),
+    ),
+  },
+  {
+    slug: "wave-title",
+    label: "Wave Title",
+    category: "Text",
+    component: defineAsyncComponent(
+      () => import("../components/ui/AnimatedText/WaveTitle/WaveTitleDemo.vue"),
+    ),
+  },
+  {
+    slug: "outline-pulse",
+    label: "Outline Pulse",
+    category: "Text",
+    component: defineAsyncComponent(
+      () => import("../components/ui/AnimatedText/OutlinePulseTitle/OutlinePulseTitleDemo.vue")
     ),
   },
   {
