@@ -44,6 +44,14 @@ export const registry = [
       () => import("../components/ui/AnimatedText/OutlinePulseTitle/OutlinePulseTitleDemo.vue")
     ),
   },
+    {
+    slug: "aurora-title ",
+    label: "Animated Aurora Title ",
+    category: "Text",
+    component: defineAsyncComponent(
+      () => import("../components/ui/AnimatedText/AnimatedAuroraTitle/AnimatedAuroraTitleDemo.vue")
+    ),
+  },
   {
     slug: "joao-bobo",
     label: "João bobo",
