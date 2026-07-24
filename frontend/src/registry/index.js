@@ -41,23 +41,35 @@ export const registry = [
     label: "Outline Pulse",
     category: "Text",
     component: defineAsyncComponent(
-      () => import("../components/ui/AnimatedText/OutlinePulseTitle/OutlinePulseTitleDemo.vue")
+      () =>
+        import("../components/ui/AnimatedText/OutlinePulseTitle/OutlinePulseTitleDemo.vue"),
     ),
   },
-    {
+  {
     slug: "aurora-title ",
     label: "Animated Aurora Title ",
     category: "Text",
     component: defineAsyncComponent(
-      () => import("../components/ui/AnimatedText/AnimatedAuroraTitle/AnimatedAuroraTitleDemo.vue")
+      () =>
+        import("../components/ui/AnimatedText/AnimatedAuroraTitle/AnimatedAuroraTitleDemo.vue"),
     ),
   },
-      {
+  {
     slug: "hover-spread-text",
     label: "Hover Spread Text",
     category: "Text",
     component: defineAsyncComponent(
-      () => import("../components/ui/AnimatedText/HoverSpreadText/HoverSpreadTextDemo.vue")
+      () =>
+        import("../components/ui/AnimatedText/HoverSpreadText/HoverSpreadTextDemo.vue"),
+    ),
+  },
+    {
+    slug: "hover-color-text ",
+    label: "Hover Color Text",
+    category: "Text",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/AnimatedText/HoverColorText/HoverColorTextDemo.vue"),
     ),
   },
   {
