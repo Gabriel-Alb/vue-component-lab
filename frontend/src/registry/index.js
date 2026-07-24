@@ -52,6 +52,14 @@ export const registry = [
       () => import("../components/ui/AnimatedText/AnimatedAuroraTitle/AnimatedAuroraTitleDemo.vue")
     ),
   },
+      {
+    slug: "hover-spread-text",
+    label: "Hover Spread Text",
+    category: "Text",
+    component: defineAsyncComponent(
+      () => import("../components/ui/AnimatedText/HoverSpreadText/HoverSpreadTextDemo.vue")
+    ),
+  },
   {
     slug: "joao-bobo",
     label: "João bobo",
