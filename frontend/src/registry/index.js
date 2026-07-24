@@ -63,13 +63,22 @@ export const registry = [
         import("../components/ui/AnimatedText/HoverSpreadText/HoverSpreadTextDemo.vue"),
     ),
   },
-    {
+  {
     slug: "hover-color-text ",
     label: "Hover Color Text",
     category: "Text",
     component: defineAsyncComponent(
       () =>
         import("../components/ui/AnimatedText/HoverColorText/HoverColorTextDemo.vue"),
+    ),
+  },
+  {
+    slug: "moving-wave-text",
+    label: "Moving Wave Text ",
+    category: "Text",
+    component: defineAsyncComponent(
+      () =>
+        import("../components/ui/AnimatedText/MovingWaveText/MovingWaveTextDemo.vue"),
     ),
   },
   {
